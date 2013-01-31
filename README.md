@@ -1,4 +1,4 @@
 CatalogParser
 =============
 
-Парсер каталога сайта www.avc-auto.ru
+Парсер каталога сайта http://www.acv-auto.com/catalog/
