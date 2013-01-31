@@ -10,6 +10,7 @@ using HtmlAgilityPack;
 
 namespace CatalogParser {
     internal class Program {
+        //TODO: Переделать метод WebClient.DownloadString и HtmlDocument.Load
         private static HtmlDocument GetPage(string url) {
             var hlWeb = new HtmlWeb {
                                         AutoDetectEncoding = false,
@@ -17,7 +18,7 @@ namespace CatalogParser {
                                     };
             return hlWeb.Load(url); //каталог
         }
-
+        //TODO: Привести в порядок xpath
         private static void Subcategory(string url, string xpath) {
             var doc = GetPage(url).DocumentNode.SelectNodes(xpath);
             var h = GetPage(url).DocumentNode.SelectSingleNode("/html/body/div/div[3]/div/div[2]/h2");
