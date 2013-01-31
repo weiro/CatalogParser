@@ -6,17 +6,22 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using HtmlAgilityPack;
 
 namespace CatalogParser {
     internal class Program {
-        //TODO: Переделать метод WebClient.DownloadString и HtmlDocument.Load
-        private static HtmlDocument GetPage(string url) {
-            var hlWeb = new HtmlWeb {
-                                        AutoDetectEncoding = false,
-                                        OverrideEncoding = Encoding.Default, //ставим кодировку cp-1251
-                                    };
-            return hlWeb.Load(url); //каталог
+        private static string ClearString(string str)
+        {
+            str = str.Trim(' ', '\n', 'r');
+            return HttpUtility.HtmlDecode(str);
+        }
+
+        private static HtmlDocument GetPage (string url) {
+            WebClient wc = new WebClient();
+            HtmlDocument htmlDocument = new HtmlDocument();
+            htmlDocument.LoadHtml(wc.DownloadString(url));
+            return htmlDocument;
         }
         //TODO: Привести в порядок xpath
         private static void Subcategory(string url, string xpath) {
