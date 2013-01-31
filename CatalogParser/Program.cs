@@ -47,23 +47,39 @@ namespace CatalogParser {
             WebClient wc = new WebClient();
             wc.DownloadFile(address, filename);
         }
-        private static void ItemList(string url) {                  
-            string xpath = @"/html/body/div/div[3]/div/div[2]/ul";
-            var doc = GetPage(url).DocumentNode.SelectNodes(xpath);
-            foreach (var li in doc) {
-                foreach (var divitem in li.ChildNodes) {
-                    foreach (var a in divitem.ChildNodes) {
-                        foreach (var childNode in a.ChildNodes) {
-                            if (childNode.HasAttributes) {
-                                string l = childNode.GetAttributeValue("href", "");
-
-                            }
-                           
-                            foreach (var node in childNode.ChildNodes) {
-                            }
-                           
+        private static void ItemList(string url) {
+            var header =
+    GetPage(url).DocumentNode.SelectSingleNode("//div[@class='p-body-center']/h2").InnerText.Trim(' ', '\r',
+                                                                                                  '\n');
+            foreach (var node in GetPage(url).DocumentNode.SelectNodes("//ul[@class=\"itemslist2\"]"))
+            {
+                if (node.SelectNodes("//li[@id]") != null)
+                {
+                    foreach (var item in node.SelectNodes("//li[@id]"))
+                    {
+                        var image = item.SelectSingleNode("div/a/img[@class='pic']");
+                        var title = item.SelectSingleNode("div/div/div/a");
+                        var code = ClearString(item.SelectSingleNode("div/div/div[@class='code']").InnerText);
+                        var code2 = ClearString(item.SelectSingleNode("div/div/div[@class='code']/code").InnerText);
+                        var descr = ClearString(item.SelectSingleNode("div/div/div[@class='descr']").InnerText);
+                        var dir = Directory.CreateDirectory(String.Format(@"Catalog\{0}\{1}", header, code2));
+                        string savedir = dir.FullName;
+                        GetImage(image.GetAttributeValue("src", ""),
+                                        String.Format(@"{0}\img-{1}.jpg", savedir, code2));
+                        using (
+                            StreamWriter streamWriter =
+                                new StreamWriter(String.Format(@"{0}\desc-{1}.txt", savedir, code2))
+                            )
+                        {
+                            streamWriter.WriteLine("link");
+                            streamWriter.WriteLine(title.GetAttributeValue("href", ""));
+                            streamWriter.WriteLine("title");
+                            streamWriter.WriteLine(ClearString(title.InnerText));
+                            streamWriter.WriteLine("code");
+                            streamWriter.WriteLine(code);
+                            streamWriter.WriteLine("description");
+                            streamWriter.WriteLine(descr);
                         }
-                        
                     }
                 }
             }
