@@ -66,24 +66,27 @@ namespace CatalogParser {
                         string savedir = dir.FullName;
                         GetImage(image.GetAttributeValue("src", ""),
                                         String.Format(@"{0}\img-{1}.jpg", savedir, code2));
-                        using (
-                            StreamWriter streamWriter =
-                                new StreamWriter(String.Format(@"{0}\desc-{1}.txt", savedir, code2))
-                            )
-                        {
-                            streamWriter.WriteLine("link");
-                            streamWriter.WriteLine(title.GetAttributeValue("href", ""));
-                            streamWriter.WriteLine("title");
-                            streamWriter.WriteLine(ClearString(title.InnerText));
-                            streamWriter.WriteLine("code");
-                            streamWriter.WriteLine(code);
-                            streamWriter.WriteLine("description");
-                            streamWriter.WriteLine(descr);
-                        }
+                        SaveItem(savedir, code2, title, code, descr);
                     }
                 }
             }
 
+        }
+
+        private static void SaveItem(string savedir, string code2, HtmlNode title, string code, string descr) {
+            using (
+                StreamWriter streamWriter =
+                    new StreamWriter(String.Format(@"{0}\desc-{1}.txt", savedir, code2))
+                ) {
+                streamWriter.WriteLine("link");
+                streamWriter.WriteLine(title.GetAttributeValue("href", ""));
+                streamWriter.WriteLine("title");
+                streamWriter.WriteLine(ClearString(title.InnerText));
+                streamWriter.WriteLine("code");
+                streamWriter.WriteLine(code);
+                streamWriter.WriteLine("description");
+                streamWriter.WriteLine(descr);
+            }
         }
 
         private static void MakeDirs(string dirname) {
