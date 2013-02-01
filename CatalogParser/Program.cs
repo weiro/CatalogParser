@@ -56,6 +56,12 @@ namespace CatalogParser {
                     }
                 }
             }
+            var pager = GetPage(url).DocumentNode.SelectSingleNode(@"//ul[@class='pager']");
+            if (pager != null) {
+                foreach (var node in pager.SelectNodes(@"li/a")) {
+                    ItemList(node.GetAttributeValue("href", ""));
+                }
+            }
         }
 
         private static void SaveItem(string savedir, string code2, HtmlNode title, string code, string descr) {
@@ -128,7 +134,7 @@ namespace CatalogParser {
         private static void Main(string[] args) {
             Stopwatch sq = new Stopwatch();
             sq.Start();
-            string maincatalog = @"http://www.acv-auto.com/catalog/";
+            const string maincatalog = @"http://www.acv-auto.com/catalog/";
             Category(maincatalog);
             var sublink = allLinks.ToArray();
             foreach (var link in sublink) {
@@ -137,9 +143,8 @@ namespace CatalogParser {
             if (allLinks.Count != 0) {
                 Console.WriteLine("Парсим продукт");
                 foreach (var link in allLinks) {
-                    Thread thread = new Thread(() => ItemList(link));
-                    thread.Start();
-                    Console.WriteLine("+" + thread.IsAlive); 
+                    ItemList(link);
+                    Console.WriteLine("+"); 
                 }
             }
             sq.Stop();
