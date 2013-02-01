@@ -7,6 +7,7 @@ using System.Web;
 using HtmlAgilityPack;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Diagnostics;
 
 namespace CatalogParser {
     internal class Program {
@@ -24,13 +25,21 @@ namespace CatalogParser {
 
         private static void GetImage(string address, string filename) {
             var wc = new WebClient();
-            wc.DownloadFile(address, filename);
+            if (!String.IsNullOrEmpty(address)) {
+                wc.DownloadFile(address, filename);
+            }
+            
         }
 
         private static void ItemList(string url) {
+
             string header =
                 GetPage(url).DocumentNode.SelectSingleNode("//div[@class='p-body-center']/h2").InnerText.Trim(' ', '\r',
                                                                                                               '\n');
+            HtmlNode crumb = GetPage(url).DocumentNode.SelectSingleNode(@"//td[@class='crumbs']");
+            if (crumb.ChildNodes.Count > 7) {
+                header = String.Format(@"{0}\{1}", crumb.ChildNodes[7].InnerText.Trim(' ', '\r', '\n'), header);
+            }
             foreach (HtmlNode node in GetPage(url).DocumentNode.SelectNodes("//ul[@class=\"itemslist2\"]")) {
                 if (node.SelectNodes("//li[@id]") != null) {
                     foreach (HtmlNode item in node.SelectNodes("//li[@id]")) {
@@ -73,33 +82,68 @@ namespace CatalogParser {
         }
 
         private static void Category(string catalogurl) {
+            Console.WriteLine("Парсим ссылки с главной");
             HtmlNodeCollection catalog =
                 GetPage(catalogurl).DocumentNode.SelectNodes(@"//table[@class='catalogcategories']/tr");
-            foreach (var trNodes in catalog) {
-                var thNodes = trNodes.ChildNodes.Where(x => x.Name == "th").ToArray();
-                if (thNodes.Count() != 0) {
-                    foreach (var aNode in thNodes) {
-                        var links = aNode.ChildNodes.Where(x => x.Name == "a").ToArray();
-                        foreach (var link in links) {
-                            allLinks.Add(link.GetAttributeValue("href", ""));
+            if (catalog != null) {
+                foreach (var trNodes in catalog) {
+                    Console.Write("+");
+                    var thNodes = trNodes.ChildNodes.Where(x => x.Name == "th").ToArray();
+                    if (thNodes.Count() != 0) {
+                        foreach (var aNode in thNodes) {
+                            var links = aNode.ChildNodes.Where(x => x.Name == "a").ToArray();
+                            foreach (var link in links) {
+                                allLinks.Add(link.GetAttributeValue("href", ""));
+                            }
                         }
                     }
                 }
+            }
+            
+        }
+
+        private static void SubCategory(string catalogurl) {
+            HtmlNodeCollection catalog =
+                GetPage(catalogurl).DocumentNode.SelectNodes(@"//table[@class='catalogcategories']/tr");
+            if (catalog != null) {
+                Console.WriteLine("Парсим ссылки подкатегорий");
+                foreach (var trNodes in catalog) {
+                    Console.Write("+");
+                    var thNodes = trNodes.ChildNodes.Where(x => x.Name == "th").ToArray();
+                    if (thNodes.Count() != 0) {
+                        foreach (var aNode in thNodes) {
+                            var links = aNode.ChildNodes.Where(x => x.Name == "a").ToArray();
+                            foreach (var link in links) {
+                                allLinks.Add(String.Format(@"{0}/{1}", catalogurl, link.GetAttributeValue("href", "")));
+                            }
+                        }
+                    }
+                }
+                Console.WriteLine("Готово");
             }
         }
 
         private static List<string> allLinks = new List<string>();
 
         private static void Main(string[] args) {
+            Stopwatch sq = new Stopwatch();
+            sq.Start();
             string maincatalog = @"http://www.acv-auto.com/catalog/";
             Category(maincatalog);
-
+            var sublink = allLinks.ToArray();
+            foreach (var link in sublink) {
+                SubCategory(link);
+            }
             if (allLinks.Count != 0) {
+                Console.WriteLine("Парсим продукт");
                 foreach (var link in allLinks) {
                     Thread thread = new Thread(() => ItemList(link));
                     thread.Start();
+                    Console.WriteLine("+" + thread.IsAlive); 
                 }
             }
+            sq.Stop();
+            Console.WriteLine(sq.Elapsed.TotalSeconds);
         }
     }
 }
