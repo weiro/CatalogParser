@@ -58,8 +58,26 @@ namespace CatalogParser {
             }
             var pager = GetPage(url).DocumentNode.SelectSingleNode(@"//ul[@class='pager']");
             if (pager != null) {
-                foreach (var node in pager.SelectNodes(@"li/a")) {
-                    ItemList(node.GetAttributeValue("href", ""));
+                foreach (var pagernode in pager.SelectNodes(@"li/a")) {
+                    foreach (HtmlNode node in GetPage(pagernode.GetAttributeValue("href", "")).DocumentNode.SelectNodes("//ul[@class=\"itemslist2\"]"))
+                    {
+                        if (node.SelectNodes("//li[@id]") != null)
+                        {
+                            foreach (HtmlNode item in node.SelectNodes("//li[@id]"))
+                            {
+                                HtmlNode image = item.SelectSingleNode("div/a/img[@class='pic']");
+                                HtmlNode title = item.SelectSingleNode("div/div/div/a");
+                                string code = ClearString(item.SelectSingleNode("div/div/div[@class='code']").InnerText);
+                                string code2 = ClearString(item.SelectSingleNode("div/div/div[@class='code']/code").InnerText);
+                                string descr = ClearString(item.SelectSingleNode("div/div/div[@class='descr']").InnerText);
+                                DirectoryInfo dir = Directory.CreateDirectory(String.Format(@"Catalog\{0}\{1}", header, code2));
+                                string savedir = dir.FullName;
+                                GetImage(image.GetAttributeValue("src", ""),
+                                         String.Format(@"{0}\img-{1}.jpg", savedir, code2));
+                                SaveItem(savedir, code2, title, code, descr);
+                            }
+                        }
+                    }
                 }
             }
         }
