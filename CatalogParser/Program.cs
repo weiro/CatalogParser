@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Threading;
 using System.Web;
 using HtmlAgilityPack;
+using System.Linq;
+using System.Linq.Expressions;
 
 namespace CatalogParser {
     internal class Program {
@@ -17,27 +20,6 @@ namespace CatalogParser {
             var htmlDocument = new HtmlDocument();
             htmlDocument.LoadHtml(wc.DownloadString(url));
             return htmlDocument;
-        }
-
-        //TODO: Привести в порядок xpath
-        private static void Subcategory(string url, string xpath) {
-            HtmlNodeCollection doc = GetPage(url).DocumentNode.SelectNodes(xpath);
-            HtmlNode h = GetPage(url).DocumentNode.SelectSingleNode("/html/body/div/div[3]/div/div[2]/h2");
-            string subname = h.InnerText;
-            foreach (HtmlNode tbody in doc) {
-                foreach (HtmlNode tr in tbody.ChildNodes) {
-                    foreach (HtmlNode th in tr.ChildNodes) {
-                        foreach (HtmlNode a in th.ChildNodes) {
-                            string line = a.GetAttributeValue("href", "");
-                            if ((!String.IsNullOrEmpty(line))) {
-                                MakeDirs(String.Format("{0}/{1}", subname, a.InnerText));
-                                ItemList(url + line);
-                                Console.WriteLine(a.InnerText);
-                            }
-                        }
-                    }
-                }
-            }
         }
 
         private static void GetImage(string address, string filename) {
@@ -90,30 +72,33 @@ namespace CatalogParser {
             }
         }
 
-        private static void Main(string[] args) {
-            string maincatalog = @"http://www.acv-auto.com/catalog/";
-            HtmlNodeCollection qwe =
-                GetPage(maincatalog).DocumentNode.SelectNodes(@"/html/body/div/div[3]/div/div[2]/table[2]");
-            var links = new List<string>(); //ссылки на категории с главной страницы каталога
-            var categoryName = new List<string>(); //имена категорий с главной
-            foreach (HtmlNode s in qwe) {
-                foreach (HtmlNode table in s.ChildNodes) {
-                    foreach (HtmlNode tr in table.ChildNodes) {
-                        foreach (HtmlNode a in tr.ChildNodes) {
-                            string line = a.GetAttributeValue("href", "");
-                            if ((!String.IsNullOrEmpty(line))) {
-                                MakeDirs(a.InnerText);
-                                links.Add(line);
-                            }
+        private static void Category(string catalogurl) {
+            HtmlNodeCollection catalog =
+                GetPage(catalogurl).DocumentNode.SelectNodes(@"//table[@class='catalogcategories']/tr");
+            foreach (var trNodes in catalog) {
+                var thNodes = trNodes.ChildNodes.Where(x => x.Name == "th").ToArray();
+                if (thNodes.Count() != 0) {
+                    foreach (var aNode in thNodes) {
+                        var links = aNode.ChildNodes.Where(x => x.Name == "a").ToArray();
+                        foreach (var link in links) {
+                            allLinks.Add(link.GetAttributeValue("href", ""));
                         }
                     }
                 }
             }
+        }
 
-            const string xpath = @"/html/body/div/div[3]/div/div[2]/table[2]";
-            foreach (string link in links) {
-                Subcategory(link, xpath);
-                //thread.Start();
+        private static List<string> allLinks = new List<string>();
+
+        private static void Main(string[] args) {
+            string maincatalog = @"http://www.acv-auto.com/catalog/";
+            Category(maincatalog);
+
+            if (allLinks.Count != 0) {
+                foreach (var link in allLinks) {
+                    Thread thread = new Thread(() => ItemList(link));
+                    thread.Start();
+                }
             }
         }
     }
