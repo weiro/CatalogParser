@@ -28,11 +28,9 @@ namespace CatalogParser {
             if (!String.IsNullOrEmpty(address)) {
                 wc.DownloadFile(address, filename);
             }
-            
         }
 
         private static void ItemList(string url) {
-
             string header =
                 GetPage(url).DocumentNode.SelectSingleNode("//div[@class='p-body-center']/h2").InnerText.Trim(' ', '\r',
                                                                                                               '\n');
@@ -59,22 +57,30 @@ namespace CatalogParser {
             var pager = GetPage(url).DocumentNode.SelectSingleNode(@"//ul[@class='pager']");
             if (pager != null) {
                 foreach (var pagernode in pager.SelectNodes(@"li/a")) {
-                    foreach (HtmlNode node in GetPage(pagernode.GetAttributeValue("href", "")).DocumentNode.SelectNodes("//ul[@class=\"itemslist2\"]"))
-                    {
-                        if (node.SelectNodes("//li[@id]") != null)
-                        {
-                            foreach (HtmlNode item in node.SelectNodes("//li[@id]"))
-                            {
+                    foreach (
+                        HtmlNode node in
+                            GetPage(pagernode.GetAttributeValue("href", "")).DocumentNode.SelectNodes(
+                                "//ul[@class=\"itemslist2\"]")) {
+                        if (node.SelectNodes("//li[@id]") != null) {
+                            foreach (HtmlNode item in node.SelectNodes("//li[@id]")) {
                                 HtmlNode image = item.SelectSingleNode("div/a/img[@class='pic']");
                                 HtmlNode title = item.SelectSingleNode("div/div/div/a");
-                                string code = ClearString(item.SelectSingleNode("div/div/div[@class='code']").InnerText);
-                                string code2 = ClearString(item.SelectSingleNode("div/div/div[@class='code']/code").InnerText);
-                                string descr = ClearString(item.SelectSingleNode("div/div/div[@class='descr']").InnerText);
-                                DirectoryInfo dir = Directory.CreateDirectory(String.Format(@"Catalog\{0}\{1}", header, code2));
+                                string code2 =
+                                    ClearString(item.SelectSingleNode("div/div/div[@class='code']/code").InnerText);
+                                string descr =
+                                    ClearString(item.SelectSingleNode("div/div/div[@class='descr']").InnerText);
+                                DirectoryInfo dir =
+                                    Directory.CreateDirectory(String.Format(@"Catalog\{0}\{1}", header, code2));
                                 string savedir = dir.FullName;
                                 GetImage(image.GetAttributeValue("src", ""),
                                          String.Format(@"{0}\img-{1}.jpg", savedir, code2));
-                                SaveItem(savedir, code2, title, code, descr);
+                                List<string> descriptionList = new List<string> {
+                                                                                    title.GetAttributeValue("href", ""),
+                                                                                    ClearString(title.InnerText),
+                                                                                    "Код товара\n" + code2,
+                                                                                    descr
+                                                                                };
+                                SaveItem(savedir, descriptionList);
                             }
                         }
                     }
@@ -82,19 +88,14 @@ namespace CatalogParser {
             }
         }
 
-        private static void SaveItem(string savedir, string code2, HtmlNode title, string code, string descr) {
+        private static void SaveItem(string savedir, List<string> text) {
             using (
                 var streamWriter =
-                    new StreamWriter(String.Format(@"{0}\desc-{1}.txt", savedir, code2))
+                    new StreamWriter(String.Format(@"{0}\desc-{1}.txt", savedir))
                 ) {
-                streamWriter.WriteLine("link");
-                streamWriter.WriteLine(title.GetAttributeValue("href", ""));
-                streamWriter.WriteLine("title");
-                streamWriter.WriteLine(ClearString(title.InnerText));
-                streamWriter.WriteLine("code");
-                streamWriter.WriteLine(code);
-                streamWriter.WriteLine("description");
-                streamWriter.WriteLine(descr);
+                foreach (var item in text) {
+                    streamWriter.WriteLine(item);
+                }
             }
         }
 
@@ -123,7 +124,6 @@ namespace CatalogParser {
                     }
                 }
             }
-            
         }
 
         private static void SubCategory(string catalogurl) {
@@ -162,7 +162,7 @@ namespace CatalogParser {
                 Console.WriteLine("Парсим продукт");
                 foreach (var link in allLinks) {
                     ItemList(link);
-                    Console.WriteLine("+"); 
+                    Console.WriteLine("+");
                 }
             }
             sq.Stop();
